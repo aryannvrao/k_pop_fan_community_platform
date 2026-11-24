@@ -129,22 +129,6 @@ Base.metadata.create_all(engine)
 
 # ---------- AUTH ----------
 
-def verify_login(email, password):
-    session = Session(engine)
-    user = session.query(User).filter_by(email=email).first()
-    if user is None:
-        session.close()
-        return False
-    try:
-        ph.verify(user.password, password)
-    except VerifyMismatchError:
-        session.close()
-        return False
-    username = user.username
-    session.close()
-    access_token = create_token(username=username, token_type="access")
-    refresh_token = create_token(username=username, token_type="refresh")
-    return {"access_token": access_token, "refresh_token": refresh_token}
 
 def create_token(username, token_type):
     time = ACCESS_TOKEN_EXPIRY
@@ -158,30 +142,9 @@ def create_token(username, token_type):
     token = jwt.encode(payload=payload, key=SECRET_KEY, algorithm=ALGORITHM)
     return token
 
-def verify_token(token, token_type):
-    try:
-        payload = jwt.decode(jwt=token, key=SECRET_KEY, algorithms=[ALGORITHM])
-    except:
-        return False
-
-    if payload["token_type"] == token_type:
-        return payload["username"]
-    return False
 
 # ------ Users ------
-def register_user(username, email, password, role="fan"):
-    session = Session(engine)
-    username_exists = session.query(User).filter_by(username=username).first()
-    email_exists = session.query(User).filter_by(email=email).first()
 
-    if username_exists is not None or email_exists is not None:
-        session.close()
-        return False
-
-    session.add(User(username=username, email=email, password=ph.hash(password), role=role))
-    session.commit()
-    session.close()
-    return True
 
 
 # ---------- SEED (only admins can create organizers, so add the first admin) ----------

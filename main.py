@@ -41,22 +41,7 @@ def register_user(data: RegisterRequest):
     raise HTTPException(status_code=400, detail="User already exists")
 
 
-@app.post("/auth/login")
-def login(data: LoginRequest):
-    token = functions.verify_login(email=data.email, password=data.password)
-    if not token:
-        raise HTTPException(status_code=401, detail="Invalid Credentials")
-    return token
 
-
-@app.post("/auth/refresh")
-def refresh(data: RefreshRequest):
-    username = functions.verify_token(token=data.refresh_token, token_type="refresh")
-    if not username:
-        raise HTTPException(status_code=401, detail="Invalid or Expired refresh token")
-
-    access_token = functions.create_token(username=username, token_type="access")
-    return {"access_token": access_token}
 
 
 # ---------- Admin ----------
