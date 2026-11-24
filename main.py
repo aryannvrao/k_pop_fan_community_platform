@@ -1,3 +1,5 @@
+from email.quoprimime import body_check
+
 from fastapi import FastAPI, HTTPException, Header
 from pydantic import BaseModel
 import functions
@@ -72,6 +74,9 @@ def refresh(data: RefreshRequest):
 
 
 # ---------- Polls ----------
+
+@app.post("/create-poll")
+def create_new_poll(artist_id : str, question : str, closes_at : str, options=body):
 
 
 # ---------- Events ----------
