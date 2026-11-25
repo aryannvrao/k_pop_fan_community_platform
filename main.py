@@ -19,6 +19,24 @@ app = FastAPI(title="K-Pop Universe - Fan Community Platform")
 
 
 # ---------- Request bodies (Pydantic) ----------
+
+class OrganizerCreate(BaseModel):
+    username: str
+    email: str
+    password: str
+
+
+class ArtistCreate(BaseModel):
+    name: str
+    description: str
+    category: str
+
+
+class FanClubCreate(BaseModel):
+    name: str
+    artist_id: int
+
+
 class RegisterRequest(BaseModel):
     username: str
     email: str
@@ -64,6 +82,28 @@ def check_token(token):
         raise HTTPException(status_code=401, detail="Invalid or Expired token")
     return payload["username"]
 
+def validate_organizer(username=None, email=None, password=None):
+    if username is not None and username.strip() == "":
+        raise HTTPException(status_code=422, detail="Username cannot be empty")
+    if email is not None and email.strip() == "":
+        raise HTTPException(status_code=422, detail="Email cannot be empty")
+    if password is not None and password.strip() == "":
+        raise HTTPException(status_code=422, detail="Password cannot be empty")
+
+
+def validate_artist(name=None, description=None, category=None):
+    if name is not None and name.strip() == "":
+        raise HTTPException(status_code=422, detail="Name cannot be empty")
+    if description is not None and description.strip() == "":
+        raise HTTPException(status_code=422, detail="Description cannot be empty")
+    if category is not None and category.strip() == "":
+        raise HTTPException(status_code=422, detail="Category cannot be empty")
+
+
+def validate_fanclub(name=None):
+    if name is not None and name.strip() == "":
+        raise HTTPException(status_code=422, detail="Fan club name cannot be empty")
+
 
 @app.get("/")
 def hello():
@@ -103,9 +143,51 @@ def refresh(data: RefreshRequest):
 
 # ---------- End Points ----------
 
+@app.post("/admin/organizers")
+def create_organizer(data: OrganizerCreate, token = Header(None)):
+    payload = check_token(token)
+    if payload["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can create organizers")
+    validate_organizer(username=data.username, email=data.email, password=data.password)
 
+    if not E1.create_organizer(username=data.username, email=data.email, password=data.password):
+        raise HTTPException(status_code=400, detail="User already exists")
+    return {"message": "Organizer created successfully"}
 
 # ---------- Artists ----------
+@app.post("/artists")
+def create_artist(data: ArtistCreate, token = Header(None)):
+    payload = check_token(token)
+    if payload["role"] != "organizer":
+        raise HTTPException(status_code=403, detail="Only organizers can add artists")
+    validate_artist(name=data.name, description=data.description, category=data.category)
+
+    return E2.create_artist(name=data.name, description=data.description, category=data.category)
+
+@app.get("/artists")
+def get_artists():
+    return E3.get_artists()
+
+@app.get("/artists/{artist_id}")
+def get_artist(artist_id: int):
+    artist = E4.get_artist(artist_id=artist_id)
+    if artist is None:
+        raise HTTPException(status_code=404, detail="Artist not found")
+    return artist
+
+@app.post("/fanclubs")
+def create_fanclub(data: FanClubCreate, token = Header(None)):
+    payload = check_token(token)
+    if payload["role"] != "fan":
+        raise HTTPException(status_code=403, detail="Only fans can create fan clubs")
+    validate_fanclub(name=data.name)
+
+    result = E5.create_fanclub(name=data.name, artist_id=data.artist_id, username=payload["username"])
+    if result is None:
+        raise HTTPException(status_code=404, detail="Artist not found")
+    if result is False:
+        raise HTTPException(status_code=404, detail="User not found")
+    return result
 
 # ---------- Fan clubs ----------
 
