@@ -166,26 +166,19 @@ def create_token(username, role, user_id, token_type):
     return token
 
 
-def verify_login(username, password):
-    session = Session(engine)
-    user = session.query(User).filter_by(username=username).first()
-
-    if user is None:
-        session.close()
+def verify_token(token, token_type):
+    if not token:
         return False
-
+    if isinstance(token, str) and token.startswith("Bearer "):
+        token = token[7:]
     try:
-        ph.verify(user.hashed_password, password)
-    except VerifyMismatchError:
-        session.close()
+        payload = jwt.decode(jwt=token, key=SECRET_KEY, algorithms=[ALGORITHM])
+    except:
         return False
 
-    session.close()
-
-    access_token = create_token(username=username, token_type="access")
-    refresh_token = create_token(username=username, token_type="refresh")
-
-    return {"access_token": access_token, "refresh_token": refresh_token}
+    if payload["token_type"] == token_type:
+        return payload
+    return False
 
 # ------ Users ------
 
@@ -204,109 +197,6 @@ def register_user(username, email, password, role):
     session.close()
     return True
 
-
-
-# ---------- FAN CLUBS ----------
-
-
-def fanclub_to_dict(f):
-    return {
-        "id": f.id,
-        "name": f.name,
-        "artist_id": f.artist_id,
-        "created_by": f.created_by,
-    }
-
-
-def get_fanclubs():
-    session = Session(engine)
-    clubs = session.query(FanClub).order_by(FanClub.id).all()
-    result = [fanclub_to_dict(c) for c in clubs]
-    session.close()
-    return result
-
-
-def join_fanclub(club_id, username):
-    session = Session(engine)
-
-    club = session.get(FanClub, club_id)
-    if club is None:
-        session.close()
-        return None
-
-    user = session.query(User).filter_by(username=username).first()
-    if user is None:
-        session.close()
-        return False
-
-    existing = session.query(FanClubMember).filter_by(club_id=club_id, user_id=user.id).first()
-    if existing is None:
-        session.add(FanClubMember(club_id=club_id, user_id=user.id))
-        session.commit()
-
-    session.close()
-    return True
-
-
-# ---------- POSTS ----------
-
-
-def post_to_dict(p):
-    return {
-        "id": p.id,
-        "text": p.text,
-        "image_url": p.image_url,
-        "user_id": p.user_id,
-    }
-
-
-def create_post(text, image_url=None, username=None):
-    session = Session(engine)
-
-    user = session.query(User).filter_by(username=username).first()
-
-    post = Post(text=text, image_url=image_url, user_id=user.id if user is not None else None)
-    session.add(post)
-    session.commit()
-    session.refresh(post)
-
-    result = post_to_dict(post)
-
-    session.close()
-    return result
-
-
-def get_posts():
-    session = Session(engine)
-    posts = session.query(Post).order_by(Post.id).all()
-    result = [post_to_dict(p) for p in posts]
-    session.close()
-    return result
-
-
-def like_or_unlike_post(post_id, username):
-    session = Session(engine)
-
-    user = session.query(User).filter_by(username=username).first()
-    if user is None:
-        session.close()
-        return None
-
-    post = session.get(Post, post_id)
-    if post is None:
-        session.close()
-        return None
-
-    existing = session.query(PostLike).filter_by(post_id=post_id, user_id=user.id).first()
-    if existing is None:
-        session.add(PostLike(post_id=post_id, user_id=user.id))
-        session.commit()
-    else:
-        session.delete(existing)
-        session.commit()
-
-    session.close()
-    return post_to_dict(post)
 
 
 # ---------- SEED (only admins can create organizers, so add the first admin) ----------
