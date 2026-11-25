@@ -1,5 +1,4 @@
 from sqlalchemy.orm import Session
-from argon2 import PasswordHasher
 from functions import engine, User, ph
 
 
