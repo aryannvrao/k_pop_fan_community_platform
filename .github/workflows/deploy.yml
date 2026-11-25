@@ -9,8 +9,8 @@ jobs:
   build-push-deploy:
     runs-on: ubuntu-latest
     env:
-      IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/k-popuniverse
-
+      # Docker Hub image name in the form <dockerhub-username>/<repo-name>.
+      IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/kpop-universe
       VERSION: v${{ github.run_number }}
     steps:
       - uses: actions/checkout@v4
@@ -21,25 +21,15 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and push backend imageg
+      - name: Build and push image
         uses: docker/build-push-action@v6
         with:
-          context: BACKEND
-          file: BACKEND/Dockerfile
+          context: .
+          file: dockerfile
           push: true
           tags: |
             ${{ env.IMAGE }}:latest
             ${{ env.IMAGE }}:${{ env.VERSION }}
-
-      - name: Build and push frontend image
-        uses: docker/build-push-action@v6
-        with:
-          context: FRONTEND
-          file: FRONTEND/Dockerfile
-          push: true
-          tags: |
-            ${{ env.FRONTEND_IMAGE }}:latest
-            ${{ env.FRONTEND_IMAGE }}:${{ env.VERSION }}
 
       - name: Deploy to EC2 via SSH
         uses: appleboy/ssh-action@v1.2.0
@@ -50,12 +40,10 @@ jobs:
           script: |
             set -e
             sudo systemctl enable --now docker
-            sudo mkdir -p /opt/attendance/data
-            if [ -f "$HOME/attendance-data/attendance.db" ] && [ ! -f /opt/attendance/data/attendance.db ]; then sudo cp "$HOME/attendance-data/attendance.db" /opt/attendance/data/; fi
+            sudo usermod -aG docker $USER
+            sudo mkdir -p /opt/kpop-universe/data
             sudo docker pull ${{ env.IMAGE }}:${{ env.VERSION }}
-            sudo docker pull ${{ env.FRONTEND_IMAGE }}:${{ env.VERSION }}
-            sudo docker rm -f attendance-tracker attendance-frontend || true
-            sudo docker run -d --name attendance-tracker --restart unless-stopped -p 8001:8001 -v /opt/attendance/data:/app/data -e SECRET_KEY='${{ secrets.JWT_SECRET_KEY }}' ${{ env.IMAGE }}:${{ env.VERSION }}
-            sudo docker run -d --name attendance-frontend --restart unless-stopped -p 80:80 ${{ env.FRONTEND_IMAGE }}:${{ env.VERSION }}
+            sudo docker rm -f kpop-universe || true
+            sudo docker run -d --name kpop-universe --restart unless-stopped -p 8001:8001 -v /opt/kpop-universe/data:/app/data -e JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }} ${{ env.IMAGE }}:${{ env.VERSION }}
             sudo docker image prune -af
-            sudo docker ps
+            sudo docker ps --filter name=kpop-universe
