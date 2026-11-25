@@ -3,6 +3,11 @@ from pydantic import BaseModel
 import functions
 from datetime import date
 from typing import List
+import E1
+import E2
+import E3
+import E4
+import E5
 import E6
 import E7
 import E8
@@ -91,10 +96,7 @@ def refresh(data: RefreshRequest):
     return {"access_token": access_token}
 
 
-
-
-
-# ---------- Admin ----------
+# ---------- End Points ----------
 
 
 # ---------- Artists ----------
