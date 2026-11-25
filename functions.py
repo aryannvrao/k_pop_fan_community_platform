@@ -1,6 +1,7 @@
 from sqlalchemy import create_engine, String, Column, Integer, Date, ForeignKey
 from sqlalchemy.orm import Session, declarative_base
 from datetime import datetime, timedelta, timezone
+import os
 import jwt
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
@@ -17,7 +18,7 @@ ADMIN_PASSWORD = "123456"
 
 ACCESS_TOKEN_EXPIRY = 15 #mins
 REFRESH_TOKEN_EXPIRY = 7 * 24 * 60
-SECRET_KEY = "SECRET123"
+SECRET_KEY = os.getenv("JWT_SECRET_KEY", "SECRET123")
 ALGORITHM = "HS256"
 
 # ---------- Tables / Models ----------
