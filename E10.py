@@ -19,16 +19,14 @@ def like_or_unlike_post(post_id, username):
     existing = session.query(PostLike).filter_by(post_id=post_id, user_id=user.id).first()
     if existing is None:
         session.add(PostLike(post_id=post_id, user_id=user.id))
-        liked = True
+        session.commit()
+        result = post_to_dict(post)
+        result["message"] = "Post liked"
     else:
         session.delete(existing)
-        liked = False
-
-    session.commit()
-    like_count = session.query(PostLike).filter_by(post_id=post_id).count()
-    result = post_to_dict(post, like_count)
-    result["liked"] = liked
-    result["message"] = "Post liked" if liked else "Post unliked"
+        session.commit()
+        result = post_to_dict(post)
+        result["message"] = "Post unliked"
 
     session.close()
     return result
