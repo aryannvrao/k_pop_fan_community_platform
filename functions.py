@@ -144,6 +144,27 @@ def create_token(username, token_type):
     return token
 
 
+def verify_login(username, password):
+    session = Session(engine)
+    user = session.query(User).filter_by(username=username).first()
+
+    if user is None:
+        session.close()
+        return False
+
+    try:
+        ph.verify(user.hashed_password, password)
+    except VerifyMismatchError:
+        session.close()
+        return False
+
+    session.close()
+
+    access_token = create_token(username=username, token_type="access")
+    refresh_token = create_token(username=username, token_type="refresh")
+
+    return {"access_token": access_token, "refresh_token": refresh_token}
+
 # ------ Users ------
 
 
