@@ -1,6 +1,7 @@
 from sqlalchemy import create_engine, String, Column, Integer, Date, ForeignKey
 from sqlalchemy.orm import Session, declarative_base
 from datetime import datetime, timedelta, timezone, time
+import os
 import jwt
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
@@ -17,7 +18,7 @@ ADMIN_PASSWORD = "123456"
 
 ACCESS_TOKEN_EXPIRY = 15 #mins
 REFRESH_TOKEN_EXPIRY = 7 * 24 * 60
-SECRET_KEY = "SECRET123"
+SECRET_KEY = os.getenv("JWT_SECRET_KEY", "SECRET123")
 ALGORITHM = "HS256"
 
 # ---------- Tables / Models ----------
@@ -129,22 +130,6 @@ Base.metadata.create_all(engine)
 
 # ---------- AUTH ----------
 
-def verify_login(email, password):
-    session = Session(engine)
-    user = session.query(User).filter_by(email=email).first()
-    if user is None:
-        session.close()
-        return False
-    try:
-        ph.verify(user.password, password)
-    except VerifyMismatchError:
-        session.close()
-        return False
-    username = user.username
-    session.close()
-    access_token = create_token(username=username, token_type="access")
-    refresh_token = create_token(username=username, token_type="refresh")
-    return {"access_token": access_token, "refresh_token": refresh_token}
 
 def create_token(username, token_type):
     time = ACCESS_TOKEN_EXPIRY
@@ -158,30 +143,112 @@ def create_token(username, token_type):
     token = jwt.encode(payload=payload, key=SECRET_KEY, algorithm=ALGORITHM)
     return token
 
-def verify_token(token, token_type):
-    try:
-        payload = jwt.decode(jwt=token, key=SECRET_KEY, algorithms=[ALGORITHM])
-    except:
-        return False
-
-    if payload["token_type"] == token_type:
-        return payload["username"]
-    return False
 
 # ------ Users ------
-def register_user(username, email, password, role="fan"):
-    session = Session(engine)
-    username_exists = session.query(User).filter_by(username=username).first()
-    email_exists = session.query(User).filter_by(email=email).first()
 
-    if username_exists is not None or email_exists is not None:
+
+
+# ---------- FAN CLUBS ----------
+
+
+def fanclub_to_dict(f):
+    return {
+        "id": f.id,
+        "name": f.name,
+        "artist_id": f.artist_id,
+        "created_by": f.created_by,
+    }
+
+
+def get_fanclubs():
+    session = Session(engine)
+    clubs = session.query(FanClub).order_by(FanClub.id).all()
+    result = [fanclub_to_dict(c) for c in clubs]
+    session.close()
+    return result
+
+
+def join_fanclub(club_id, username):
+    session = Session(engine)
+
+    club = session.get(FanClub, club_id)
+    if club is None:
+        session.close()
+        return None
+
+    user = session.query(User).filter_by(username=username).first()
+    if user is None:
         session.close()
         return False
 
-    session.add(User(username=username, email=email, password=ph.hash(password), role=role))
-    session.commit()
+    existing = session.query(FanClubMember).filter_by(club_id=club_id, user_id=user.id).first()
+    if existing is None:
+        session.add(FanClubMember(club_id=club_id, user_id=user.id))
+        session.commit()
+
     session.close()
     return True
+
+
+# ---------- POSTS ----------
+
+
+def post_to_dict(p):
+    return {
+        "id": p.id,
+        "text": p.text,
+        "image_url": p.image_url,
+        "user_id": p.user_id,
+    }
+
+
+def create_post(text, image_url=None, username=None):
+    session = Session(engine)
+
+    user = session.query(User).filter_by(username=username).first()
+
+    post = Post(text=text, image_url=image_url, user_id=user.id if user is not None else None)
+    session.add(post)
+    session.commit()
+    session.refresh(post)
+
+    result = post_to_dict(post)
+
+    session.close()
+    return result
+
+
+def get_posts():
+    session = Session(engine)
+    posts = session.query(Post).order_by(Post.id).all()
+    result = [post_to_dict(p) for p in posts]
+    session.close()
+    return result
+
+
+def like_or_unlike_post(post_id, username):
+    session = Session(engine)
+
+    user = session.query(User).filter_by(username=username).first()
+    if user is None:
+        session.close()
+        return None
+
+    post = session.get(Post, post_id)
+    if post is None:
+        session.close()
+        return None
+
+    existing = session.query(PostLike).filter_by(post_id=post_id, user_id=user.id).first()
+    if existing is None:
+        session.add(PostLike(post_id=post_id, user_id=user.id))
+        session.commit()
+    else:
+        session.delete(existing)
+        session.commit()
+
+    session.close()
+    return post_to_dict(post)
 
 
 # ---------- SEED (only admins can create organizers, so add the first admin) ----------
