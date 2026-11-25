@@ -10,6 +10,7 @@ import E9
 import E10
 import E11
 import E12
+import E13
 
 app = FastAPI(title="K-Pop Universe - Fan Community Platform")
 
@@ -215,6 +216,14 @@ def vote_in_poll(poll_id: int, data: VoteRequest, token = Header(None)):
         raise HTTPException(status_code=409, detail="You have already voted in this poll")
 
     return {"message": "Vote recorded successfully"}
+
+
+@app.get("/polls/{poll_id}/results")
+def get_poll_results(poll_id: int):
+    result = E13.get_poll_results(poll_id=poll_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Poll not found")
+    return result
 
 
 # ---------- Events ----------
