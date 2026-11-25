@@ -42,9 +42,17 @@ jobs:
             sudo mkdir -p /opt/kpop-universe/data
             if ! sudo docker info >/dev/null 2>&1; then
               echo "Docker not available — installing it"
-              sudo apt-get update && sudo apt-get install -y docker.io
-              sudo systemctl enable --now docker || true
+              if command -v apt-get >/dev/null 2>&1; then
+                sudo apt-get update && sudo apt-get install -y docker.io
+              elif command -v dnf >/dev/null 2>&1; then
+                sudo dnf install -y docker
+              elif command -v yum >/dev/null 2>&1; then
+                sudo yum install -y docker
+              else
+                echo "No apt/dnf/yum found — cannot install Docker" && exit 1
+              fi
             fi
+            sudo systemctl enable --now docker || true
             sudo usermod -aG docker $USER
             sudo docker pull ${{ env.IMAGE }}:${{ env.VERSION }}
             sudo docker rm -f kpop-universe || true
