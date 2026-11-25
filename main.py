@@ -54,20 +54,6 @@ def check_token(token):
     return payload["username"]
 
 
-def check_role(token, required_role, detail):
-    payload = functions.verify_token(token=token, token_type="access")
-    if not payload:
-        raise HTTPException(status_code=401, detail="Invalid or Expired token")
-    if payload["role"] != required_role:
-        raise HTTPException(status_code=403, detail=detail)
-    return payload
-
-
-def validate_post(text):
-    if not text or not text.strip():
-        raise HTTPException(status_code=422, detail="Post text cannot be empty")
-
-
 @app.get("/")
 def hello():
     return {"message": "K-Pop Universe API. Docs at /docs"}
@@ -122,7 +108,12 @@ def get_fanclubs(artist_id: int = None, name: str = None):
 
 @app.post("/fanclubs/{club_id}/join")
 def join_fanclub(club_id: int, token = Header(None)):
-    payload = check_role(token, "fan", "Only fans can join fan clubs")
+    payload = functions.verify_token(token=token, token_type="access")
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid or Expired token")
+    if payload["role"] != "fan":
+        raise HTTPException(status_code=403, detail="Only fans can join fan clubs")
+
     result = E7.join_fanclub(club_id=club_id, username=payload["username"])
     if result == "club_not_found":
         raise HTTPException(status_code=404, detail="Fan club not found")
@@ -130,15 +121,21 @@ def join_fanclub(club_id: int, token = Header(None)):
         raise HTTPException(status_code=404, detail="User not found")
     if result == "already_joined":
         raise HTTPException(status_code=409, detail="Already a member of this fan club")
-    return {"message": "Joined fan club", "club_id": club_id}
+    return {"message": "Joined fan club"}
 
 
 # ---------- Posts ----------
 
 @app.post("/posts", status_code=201)
 def create_post(data: PostCreate, token = Header(None)):
-    payload = check_role(token, "fan", "Only fans can create posts")
-    validate_post(text=data.text)
+    payload = functions.verify_token(token=token, token_type="access")
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid or Expired token")
+    if payload["role"] != "fan":
+        raise HTTPException(status_code=403, detail="Only fans can create posts")
+    if data.text.strip() == "":
+        raise HTTPException(status_code=422, detail="Post text cannot be empty")
+
     post = E8.create_post(text=data.text, image_url=data.image_url, username=payload["username"])
     if post is None:
         raise HTTPException(status_code=404, detail="User not found")
@@ -152,7 +149,12 @@ def get_posts(user_id: int = None):
 
 @app.post("/posts/{post_id}/like")
 def like_or_unlike_post(post_id: int, token = Header(None)):
-    payload = check_role(token, "fan", "Only fans can like or unlike posts")
+    payload = functions.verify_token(token=token, token_type="access")
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid or Expired token")
+    if payload["role"] != "fan":
+        raise HTTPException(status_code=403, detail="Only fans can like or unlike posts")
+
     result = E10.like_or_unlike_post(post_id=post_id, username=payload["username"])
     if result is None:
         raise HTTPException(status_code=404, detail="Post not found")

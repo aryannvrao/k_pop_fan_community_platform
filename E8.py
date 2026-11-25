@@ -2,13 +2,12 @@ from sqlalchemy.orm import Session
 from functions import engine, Post, User
 
 
-def post_to_dict(p, like_count=0):
+def post_to_dict(p):
     return {
         "id": p.id,
         "text": p.text,
         "image_url": p.image_url,
         "user_id": p.user_id,
-        "like_count": like_count,
     }
 
 
@@ -25,7 +24,7 @@ def create_post(text, image_url=None, username=None):
     session.commit()
     session.refresh(post)
 
-    result = post_to_dict(post, 0)
+    result = post_to_dict(post)
 
     session.close()
     return result

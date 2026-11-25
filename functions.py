@@ -167,10 +167,6 @@ def create_token(username, role, user_id, token_type):
 
 
 def verify_token(token, token_type):
-    if not token:
-        return False
-    if isinstance(token, str) and token.startswith("Bearer "):
-        token = token[7:]
     try:
         payload = jwt.decode(jwt=token, key=SECRET_KEY, algorithms=[ALGORITHM])
     except:
