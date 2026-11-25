@@ -1,6 +1,6 @@
 from sqlalchemy import create_engine, String, Column, Integer, Date, ForeignKey
 from sqlalchemy.orm import Session, declarative_base
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, time
 import os
 import jwt
 from argon2 import PasswordHasher
@@ -131,12 +131,34 @@ Base.metadata.create_all(engine)
 # ---------- AUTH ----------
 
 
-def create_token(username, token_type):
+def verify_login(email, password):
+    session = Session(engine)
+    user = session.query(User).filter_by(email=email).first()
+    if user is None:
+        session.close()
+        return False
+    try:
+        ph.verify(user.password, password)
+    except VerifyMismatchError:
+        session.close()
+        return False
+    username = user.username
+    role = user.role
+    user_id = user.id
+    session.close()
+    access_token = create_token(username=username, role=role, user_id=user_id, token_type="access")
+    refresh_token = create_token(username=username, role=role, user_id=user_id, token_type="refresh")
+    return {"access_token": access_token, "refresh_token": refresh_token}
+
+
+def create_token(username, role, user_id, token_type):
     time = ACCESS_TOKEN_EXPIRY
     if token_type == "refresh":
         time = REFRESH_TOKEN_EXPIRY
     payload = {
+        "user_id": user_id,
         "username": username,
+        "role": role,
         "token_type": token_type,
         "exp": datetime.now(timezone.utc) + timedelta(minutes=time)
     }
@@ -166,6 +188,21 @@ def verify_login(username, password):
     return {"access_token": access_token, "refresh_token": refresh_token}
 
 # ------ Users ------
+
+
+def register_user(username, email, password, role):
+    session = Session(engine)
+    username_exists = session.query(User).filter_by(username=username).first()
+    email_exists = session.query(User).filter_by(email=email).first()
+
+    if username_exists is not None or email_exists is not None:
+        session.close()
+        return False
+
+    session.add(User(username=username, email=email, password=ph.hash(password), role=role))
+    session.commit()
+    session.close()
+    return True
 
 
 
