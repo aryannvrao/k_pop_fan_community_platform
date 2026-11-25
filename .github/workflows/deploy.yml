@@ -39,9 +39,13 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             set -e
-            sudo systemctl enable --now docker
-            sudo usermod -aG docker $USER
             sudo mkdir -p /opt/kpop-universe/data
+            if ! sudo docker info >/dev/null 2>&1; then
+              echo "Docker not available — installing it"
+              sudo apt-get update && sudo apt-get install -y docker.io
+              sudo systemctl enable --now docker || true
+            fi
+            sudo usermod -aG docker $USER
             sudo docker pull ${{ env.IMAGE }}:${{ env.VERSION }}
             sudo docker rm -f kpop-universe || true
             sudo docker run -d --name kpop-universe --restart unless-stopped -p 8001:8001 -v /opt/kpop-universe/data:/app/data -e JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }} ${{ env.IMAGE }}:${{ env.VERSION }}
