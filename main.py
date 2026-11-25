@@ -9,6 +9,7 @@ import E8
 import E9
 import E10
 import E11
+import E12
 
 app = FastAPI(title="K-Pop Universe - Fan Community Platform")
 
@@ -35,6 +36,10 @@ class CreatePollRequest(BaseModel):
     options: List[str]
     opens_at: date
     closes_at: date
+
+
+class VoteRequest(BaseModel):
+    option_id: int
 
 
 class PostCreate(BaseModel):
@@ -181,6 +186,33 @@ def create_new_poll(data: CreatePollRequest, token = Header(None)):
         raise HTTPException(status_code=400, detail="closes_at must be after opens_at")
 
     return {"message": "Poll created successfully", "poll_id": result}
+
+
+@app.post("/polls/{poll_id}/vote")
+def vote_in_poll(poll_id: int, data: VoteRequest, token = Header(None)):
+    payload = functions.verify_token(token=token, token_type="access")
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid or Expired token")
+
+    if payload["role"] != "fan":
+        raise HTTPException(status_code=403, detail="Only fans can vote in polls")
+
+    result = E12.vote_in_poll(
+        poll_id=poll_id,
+        option_id=data.option_id,
+        user_id=payload["user_id"]
+    )
+
+    if result == "poll_not_found":
+        raise HTTPException(status_code=404, detail="Poll not found")
+    if result == "poll_closed":
+        raise HTTPException(status_code=400, detail="Poll is not open for voting")
+    if result == "option_not_found":
+        raise HTTPException(status_code=404, detail="Poll option not found")
+    if result == "already_voted":
+        raise HTTPException(status_code=409, detail="You have already voted in this poll")
+
+    return {"message": "Vote recorded successfully"}
 
 
 # ---------- Events ----------
