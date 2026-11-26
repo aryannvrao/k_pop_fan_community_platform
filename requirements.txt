@@ -3,3 +3,4 @@ uvicorn
 sqlalchemy
 PyJWT
 argon2-cffi
+pytest
