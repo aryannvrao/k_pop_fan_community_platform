@@ -39,7 +39,6 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             set -e
-            sudo mkdir -p /opt/kpop-universe/data
             if ! sudo docker info >/dev/null 2>&1; then
               echo "Docker not available — installing it"
               if command -v apt-get >/dev/null 2>&1; then
@@ -53,9 +52,29 @@ jobs:
               fi
             fi
             sudo systemctl enable --now docker || true
-            sudo usermod -aG docker $USER
+            sudo usermod -aG docker $USER || true
+
+            # Pull latest image
             sudo docker pull ${{ env.IMAGE }}:${{ env.VERSION }}
+
+            # Free port 8001 and remove existing container
+            sudo docker rm -f $(sudo docker ps -q --filter "publish=8001") || true
             sudo docker rm -f kpop-universe || true
-            sudo docker run -d --name kpop-universe --restart unless-stopped -p 8001:8001 -v /opt/kpop-universe/data:/app/data -e JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }} ${{ env.IMAGE }}:${{ env.VERSION }}
+            sudo fuser -k 8001/tcp || true
+
+            # Persistent SQLite database storage (PRD Section 7)
+            mkdir -p /home/$USER/kpop-data
+            touch /home/$USER/kpop-data/kpop.db
+            sudo chmod -R 777 /home/$USER/kpop-data
+
+            # Run container with JWT_SECRET_KEY and mounted SQLite database
+            sudo docker run -d \
+              --name kpop-universe \
+              --restart unless-stopped \
+              -p 8001:8001 \
+              -e JWT_SECRET_KEY="${{ secrets.JWT_SECRET_KEY }}" \
+              -v /home/$USER/kpop-data/kpop.db:/app/kpop.db \
+              ${{ env.IMAGE }}:${{ env.VERSION }}
+
             sudo docker image prune -af
             sudo docker ps --filter name=kpop-universe
