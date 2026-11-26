@@ -80,7 +80,7 @@ def check_token(token):
     payload = functions.verify_token(token=token, token_type="access")
     if not payload:
         raise HTTPException(status_code=401, detail="Invalid or Expired token")
-    return payload["username"]
+    return payload
 
 def validate_organizer(username=None, email=None, password=None):
     if username is not None and username.strip() == "":

@@ -24,6 +24,7 @@ def create_poll(artist_id, question, opens_at, closes_at, options):
         closes_at=closes_at
     )
     session.add(poll)
+    session.flush()
 
     poll_options = []
     for option in options:
