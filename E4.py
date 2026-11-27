@@ -1,6 +1,5 @@
 from sqlalchemy.orm import Session
-from functions import engine, Artist
-from E2 import artist_to_dict
+from functions import engine, Artist, artist_to_dict
 
 def get_artist(artist_id):
     session = Session(engine)

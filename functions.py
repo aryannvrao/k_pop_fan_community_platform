@@ -128,6 +128,36 @@ class EventRegistration(Base):
 Base.metadata.create_all(engine)
 
 
+# ---------- Model -> dict helpers ----------
+
+
+def artist_to_dict(a):
+    return {
+        "id": a.id,
+        "name": a.name,
+        "description": a.description,
+        "category": a.category,
+    }
+
+
+def fanclub_to_dict(f):
+    return {
+        "id": f.id,
+        "name": f.name,
+        "artist_id": f.artist_id,
+        "created_by": f.created_by,
+    }
+
+
+def post_to_dict(p):
+    return {
+        "id": p.id,
+        "text": p.text,
+        "image_url": p.image_url,
+        "user_id": p.user_id,
+    }
+
+
 # ---------- AUTH ----------
 
 

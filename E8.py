@@ -1,14 +1,5 @@
 from sqlalchemy.orm import Session
-from functions import engine, Post, User
-
-
-def post_to_dict(p):
-    return {
-        "id": p.id,
-        "text": p.text,
-        "image_url": p.image_url,
-        "user_id": p.user_id,
-    }
+from functions import engine, Post, User, post_to_dict
 
 
 def create_post(text, image_url=None, username=None):

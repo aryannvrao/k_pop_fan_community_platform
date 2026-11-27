@@ -1,6 +1,5 @@
 from sqlalchemy.orm import Session
-from functions import engine, Post
-from E8 import post_to_dict
+from functions import engine, Post, post_to_dict
 
 
 def get_posts(user_id=None):

@@ -1,6 +1,5 @@
 from sqlalchemy.orm import Session
-from functions import engine, Post, PostLike, User
-from E8 import post_to_dict
+from functions import engine, Post, PostLike, User, post_to_dict
 
 
 def like_or_unlike_post(post_id, username):

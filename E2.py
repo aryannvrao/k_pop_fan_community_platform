@@ -1,16 +1,5 @@
 from sqlalchemy.orm import Session
-from functions import engine, Artist
-
-
-
-def artist_to_dict(a):
-    return {
-        "id": a.id,
-        "name": a.name,
-        "description": a.description,
-        "category": a.category,
-    }
-
+from functions import engine, Artist, artist_to_dict
 
 
 def create_artist(name, description, category):

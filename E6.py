@@ -1,14 +1,5 @@
 from sqlalchemy.orm import Session
-from functions import engine, FanClub
-
-
-def fanclub_to_dict(f):
-    return {
-        "id": f.id,
-        "name": f.name,
-        "artist_id": f.artist_id,
-        "created_by": f.created_by,
-    }
+from functions import engine, FanClub, fanclub_to_dict
 
 
 def get_fanclubs(artist_id=None, name=None):
