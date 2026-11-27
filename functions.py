@@ -239,23 +239,3 @@ def seed_admin():
 
 
 seed_admin()
-
-
-# ---------- SEED (add a few artists so the API has data to start with) ----------
-
-def seed_artists():
-    session = Session(engine)
-
-    if session.query(Artist).count() == 0:
-        session.add_all([
-            Artist(name="BTS", description="Seven-member boy group from Big Hit Music", category="Boy Group"),
-            Artist(name="BLACKPINK", description="Four-member girl group from YG Entertainment", category="Girl Group"),
-            Artist(name="Stray Kids", description="Eight-member boy group from JYP Entertainment", category="Boy Group"),
-            Artist(name="IU", description="Solo singer-songwriter and actress", category="Soloist"),
-        ])
-        session.commit()
-
-    session.close()
-
-
-seed_artists()
