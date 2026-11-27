@@ -1,10 +1,13 @@
 # kpop-universe
 
+**Live Instance (Swagger UI):** http://18.208.129.99:8001/docs
+
 # Team - K-Pop Universe – Fan Community Platform
 
 | Partner 1 | Partner 2 | Partner 3 | Project |
 |---|---|---|---|
 | Aryan | Harsita | Kaif | K-Pop Universe – Fan Community Platform |
+
 
 ## 1. Who is doing what
 
@@ -18,7 +21,7 @@
 | Day 2 | Kaif | `E13`–`E15` (poll results, create event, register for event) | ✅ | Automated testing & CI/CD test gate | None |
 | Day 3 | Aryan | Deployment verification & presentation prep | ✅ | Final demo & submission | None |
 | Day 3 | Harsita | API verification in `/docs`, README & presentation prep | ✅ | Final demo & submission | None |
-| Day 3 | Kaif | Automated test suite (`test_api.py`), CI test gate & SQLite mount in `deploy.yml` | ✅ | Final demo & submission | None |
+| Day 3 | Kaif | SQLite mount in `deploy.yml` | ✅ | Final demo & submission | None |
 
 ## 2. User roles 
 
